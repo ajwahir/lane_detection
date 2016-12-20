@@ -8,3 +8,6 @@ from os import listdir
 from os.path import join
 import sklearn.preprocessing
 
+lanes_pixels=np.load('/home/ajwahir/IGVC/codes/lane_detection/data_collection/lanes_pixels.npy')
+background_pixels=np.load('/home/ajwahir/IGVC/codes/lane_detection/data_collection/background_pixels.npy')
+
