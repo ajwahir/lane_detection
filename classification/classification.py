@@ -74,4 +74,5 @@ params='-t 2 -g 10 -c 200'
 m=svm_train(trainclass,train,params)
 p_label, accuracy, p_val = svm_predict(valclass,val, m)
 
-
+# save model
+svm_save_model("lane_det.model",m)
