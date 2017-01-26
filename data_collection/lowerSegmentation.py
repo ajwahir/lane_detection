@@ -88,7 +88,7 @@ for f in listdir(datapath):
     ax.imshow(mark_boundaries(image, segments))
     plt.axis("off")
     # plt.show()
-    # ch = raw_input('do you want to go to next image ? :')
+    ch = raw_input('do you want to go to next image ? :')
     plt.close('all')
 
     if str(ch) is 'b':

@@ -17,9 +17,13 @@ def zerolistmaker(n):
     listofzeros = [1] * n
     return listofzeros
 
+def remove_unconnected(segments):
+	return 0
+
+
 # load the model
 model = svm_load_model("lane_det.model")
-
+p_threshold=1.0
 datapath = '/home/ajwahir/IGVC/dataset/lanes/'
 
 for f in listdir(datapath):
@@ -56,7 +60,10 @@ for f in listdir(datapath):
 
 	fake_class=(np.array(zerolistmaker(len(features)))*[2]).tolist()
 	p_label, accuracy, p_val=svm_predict(fake_class,features, model)
-	p_lane_labels=np.where(np.asarray(p_label)==1)
+	
+
+	# p_lane_labels=np.where(np.asarray(p_label)==1)
+	p_lane_labels=np.where(np.asarray(p_val)>p_threshold)
 	p_lane_labels=p_lane_labels[0].tolist()
 
 	lane_segments=segments*0
