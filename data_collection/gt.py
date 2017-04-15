@@ -11,7 +11,7 @@ from skimage.segmentation import slic
 from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 from skimage import io
-
+import scipy.misc
 
 coords = []
 numSegments_upper = 400
@@ -43,7 +43,8 @@ def onclick(event):
         plt.close()
     return
 
-datapath = '/home/ajwahir/IGVC/dataset/lanes/'
+datapath = '/home/ajwahir/IGVC/dataset/bug/'
+gtpath='/home/ajwahir/IGVC/dataset/gt/'
 
 for f in listdir(datapath):
         
@@ -80,21 +81,6 @@ for f in listdir(datapath):
                     gt_image[gt_coordinates[i][0][j],gt_coordinates[i][1][j]]=255
 
         coords=[]
-        plt.imshow(gt_image,cmap=plt.cm.gray)
-    #I dont know why it is not continuous, so you will have to run this part of the code after selecting the points
-    #seperately 
-
-
-    # patch_pixels=[]
-    # all_patch_pixels = np.zeros((len(coords),), dtype=np.object)
-    # for i in range(0,len(coords)):
-    #     x=int(math.floor(coords[i][0]))
-    #     y=int(math.floor(coords[i][1]))
-    #     label_selected = segments[x,y]
-    #     patch_coords=np.where(segments==label_selected)
-    #     for j in range(0,len(patch_coords[0])):
-    #         xp=patch_coords[0][j]
-    #         yp=patch_coords[1][j]
-    #         patch_pixels.append(image[xp,yp,1])
-    #     all_patch_pixels[i]=patch_pixels
-    #     patch_pixels=[]
+        # plt.imshow(gt_image,cmap=plt.cm.gray)
+    imname=f[:-5]+'_gt.jpg'
+    scipy.misc.imsave(join(gtpath,imname), gt_image)
