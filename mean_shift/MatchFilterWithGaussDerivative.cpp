@@ -13,7 +13,7 @@
 using namespace cv;
 using namespace std;
 
-Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaForGD,float yLengthForMF,float yLengthForGD,int tForMatchfilterRes,int tForGaussDerRes,int numOfDirections,Mat mask,Mat maskForGDRange,float c_value,float t)
+Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaForGD,float yLengthForMF,float yLengthForGD,int tForMatchfilterRes,int tForGaussDerRes,int numOfDirections,float c_value,float t)
 {
 	int rows = im.rows;
 	int cols = im.cols;
@@ -41,7 +41,12 @@ Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaFo
 		filter2D(RDF, channel_GaussDerivativeRes[i], -1 , S2, Point(-1, -1), 0, BORDER_DEFAULT );
 		channel_GaussDerivativeRes[i]=abs(channel_GaussDerivativeRes[i]);
 	}
-  max(InputArray src1, InputArray src2, OutputArray dst)
+	Mat maxMatchFilterRes = Mat::zeros(rows,cols, CV_8UC1);
+  for(int j=0;j<numOfDirections;j++)
+		max(maxMatchFilterRes,channel_MatchFilterRes[j],maxMatchFilterRes);
+	Mat accoGaussDerivativeRes = Mat::zeros(rows,cols, CV_8UC1);
+	  for(j=0;j<numOfDirections;j++)
+			min(accoGaussDerivativeRes,channel_GaussDerivativeRes[j],accoGaussDerivativeRes);
   filter2D(accoGaussDerivativeRes,averageGD, -1 , S2, Point(-1, -1), 0, BORDER_DEFAULT );
 	Scalar tempVal = mean(averageGD);
 	float meanGD = tempVal.val[0];
@@ -51,9 +56,10 @@ Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaFo
   multipy(normalGD,small,normalGD)
 	normalGD = normalGD + big*5;
 	Mat W = c_value + normalGD / 2;
-	bitwise_not (maskForGDRange, maskForGDRange_not );
-	multipy(W,maskForGDRange_not,W);
-  W = W + maskForGDRange * c_value;
+	// bitwise_not (maskForGDRange, maskForGDRange_not );
+	// multipy(W,maskForGDRange_not,W);
+  // W = W + maskForGDRange * c_value;
+	W = W + c_value;
 	K1 = tForGaussDerRes;
 	Mat S1 = Mat::ones(K1, K1, CV_8UC1);
 	S1=S1/(K1*K1);
@@ -68,7 +74,7 @@ Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaFo
 
 int main( int argc, char** argv )
 {
-	Mat src = imread("lane_test.png");
-
+	Mat im = imread("lane_test.png");
+  Mat vess1 = MatchFilterWithGaussDerivative(1,im,1.5,1.5,9,5,41,201,8,3,40);
 
 }
