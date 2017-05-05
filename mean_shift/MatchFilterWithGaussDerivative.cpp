@@ -13,15 +13,128 @@
 using namespace cv;
 using namespace std;
 
-Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaForGD,float yLengthForMF,float yLengthForGD,int tForMatchfilterRes,int tForGaussDerRes,int numOfDirections,float c_value,float t)
+string type2str(int type) {
+  string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+Mat MatchFilterAndGaussDerKernel(float sigma,int YLength, float theta, int type)
+{
+
+  if(type==0)
+  {
+
+    int widthOfTheKernel = ceil(pow((pow((6*ceil(sigma)+1),2) + pow(YLength,2)),0.5));
+    if((widthOfTheKernel%2) == 0)
+      widthOfTheKernel = widthOfTheKernel + 1;
+    Mat matchFilterKernel = Mat::zeros(widthOfTheKernel,widthOfTheKernel, CV_64FC1);
+    int halfLength = (widthOfTheKernel - 1) / 2;
+    int row = 0;
+    for(int y=halfLength;y>=-halfLength;y--)
+    {
+     int col=0;
+     for(int x=-halfLength;x<=halfLength;x++)
+     {
+      int xPrime = x * cos(theta) + y * sin(theta);
+      int yPrime = y * cos(theta) - x * sin(theta);
+      if(abs(xPrime)>3.5*ceil(sigma))
+        matchFilterKernel.at<float>(Point(row,col)) = 0;
+        else if (abs(yPrime)> (YLength-1) / 2)
+          matchFilterKernel.at<float>(Point(row,col)) = 0;
+        else
+				{
+
+					matchFilterKernel.at<float>(Point(row,col)) = -exp(-0.5*pow((xPrime/sigma),2))/((pow((2*pi),0.5)*sigma));
+	      }
+		//
+
+        col = col + 1;
+      }
+      row = row + 1;
+    }
+		// Mat out;
+		Scalar tempVal1 = sum(matchFilterKernel);
+		// cout<<matchFilterKernel<<endl;
+		float negative_sum;
+		for (int i = 0; i < matchFilterKernel.cols; i++ )
+        for (int j = 0; j < matchFilterKernel.rows; j++)
+            if (matchFilterKernel.at<float>(j, i)<0)
+                negative_sum+= matchFilterKernel.at<float>(j, i);
+
+		// threshold(matchFilterKernel,out,0,1,THRESH_TOZERO_INV);
+		// Scalar tempVal2 = sum(out);
+		float mean = tempVal1.val[0]/negative_sum;
+
+    for(int i=0;i<widthOfTheKernel;i++)
+     for(int j=0;j<widthOfTheKernel;j++)
+       if(matchFilterKernel.at<float>(Point(i,j))<0)
+        matchFilterKernel.at<float>(Point(i,j)) = matchFilterKernel.at<float>(Point(i,j)) - mean;
+
+   return matchFilterKernel;
+    }
+
+
+   else
+  {
+
+
+    int widthOfTheKernel = ceil(pow((pow((6*ceil(sigma)+1),2) + pow(YLength,2)),0.5));
+    if((widthOfTheKernel%2) == 0)
+      widthOfTheKernel = widthOfTheKernel + 1;
+
+    int halfLength = (widthOfTheKernel - 1) / 2;
+		Mat GaussDerivativeKernel = Mat::zeros(widthOfTheKernel,widthOfTheKernel, CV_32FC1);
+    int row = 0;
+    for(int y=halfLength;y>=-halfLength;y--)
+    {
+     int col=0;
+     for(int x=-halfLength;x<=halfLength;x++)
+     {
+      int xPrime = x * cos(theta) + y * sin(theta);
+      int yPrime = y * cos(theta) - x * sin(theta);
+      if(abs(xPrime)>3.5*ceil(sigma))
+        GaussDerivativeKernel.at<float>(Point(row,col)) = 0;
+      else if (abs(yPrime)> (YLength-1) / 2)
+        GaussDerivativeKernel.at<float>(Point(row,col)) = 0;
+      else
+        GaussDerivativeKernel.at<float>(Point(row,col)) = -exp(-0.5*pow((xPrime/sigma),2))/((pow((2*pi),0.5)*pow(sigma,3)));
+
+        col = col + 1;
+      }
+      row = row + 1;
+    }
+
+   return GaussDerivativeKernel;
+    }
+  }
+
+Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaForGD,int yLengthForMF,int yLengthForGD,int tForMatchfilterRes,int tForGaussDerRes,int numOfDirections,float c_value,int t)
 {
 	int rows = im.rows;
 	int cols = im.cols;
+	// cout<<"here";
 	int sz[3] = {rows,cols,numOfDirections};
-	Mat MatchFilterRes(3,sz, CV_8UC(1), Scalar::all(0));
-	Mat GaussDerivativeRes(3,sz, CV_8UC(1), Scalar::all(0));
+	Mat MatchFilterRes(3,sz, CV_32FC(1), Scalar::all(0));
+	Mat GaussDerivativeRes(3,sz, CV_32FC(1), Scalar::all(0));
 	int K2=tForMatchfilterRes;
-	Mat S2 = Mat::ones(K2, K2, CV_8UC1);
+	Mat S2 = Mat::ones(K2, K2, CV_32FC1);
 	S2=S2/(K2*K2);
   Mat matchFilterKernel;
 	Mat gaussDerivativeFilterKernel;
@@ -36,45 +149,72 @@ Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaFo
 	{
 		matchFilterKernel = MatchFilterAndGaussDerKernel(sigmaForMF,yLengthForMF, pi/numOfDirections*i,0);
 		gaussDerivativeFilterKernel = MatchFilterAndGaussDerKernel(sigmaForGD,yLengthForGD, pi/numOfDirections*i,1);
-		filter2D(im, channel_MatchFilterRes[i], -1 , matchFilterKernel, Point(-1, -1), 0, BORDER_DEFAULT );
+		filter2D(im, channel_MatchFilterRes[i], im.depth() , matchFilterKernel, Point(-1, -1), 0, BORDER_DEFAULT );
 		filter2D(im, RDF, -1 , gaussDerivativeFilterKernel, Point(-1, -1), 0, BORDER_DEFAULT );
 		filter2D(RDF, channel_GaussDerivativeRes[i], -1 , S2, Point(-1, -1), 0, BORDER_DEFAULT );
 		channel_GaussDerivativeRes[i]=abs(channel_GaussDerivativeRes[i]);
 	}
+
 	Mat maxMatchFilterRes = Mat::zeros(rows,cols, CV_8UC1);
+	maxMatchFilterRes.convertTo(maxMatchFilterRes,CV_32F);
+	maxMatchFilterRes=channel_MatchFilterRes[0];
   for(int j=0;j<numOfDirections;j++)
 		max(maxMatchFilterRes,channel_MatchFilterRes[j],maxMatchFilterRes);
 	Mat accoGaussDerivativeRes = Mat::zeros(rows,cols, CV_8UC1);
-	  for(j=0;j<numOfDirections;j++)
-			min(accoGaussDerivativeRes,channel_GaussDerivativeRes[j],accoGaussDerivativeRes);
+	accoGaussDerivativeRes.convertTo(accoGaussDerivativeRes,CV_32F);
+	accoGaussDerivativeRes=channel_GaussDerivativeRes[0];
+	for(int j=0;j<numOfDirections;j++)
+		min(accoGaussDerivativeRes,channel_GaussDerivativeRes[j],accoGaussDerivativeRes);
+	Mat averageGD;
   filter2D(accoGaussDerivativeRes,averageGD, -1 , S2, Point(-1, -1), 0, BORDER_DEFAULT );
 	Scalar tempVal = mean(averageGD);
 	float meanGD = tempVal.val[0];
+	cout<<meanGD<<endl;
 	Mat normalGD = averageGD / meanGD; //check if the mat elements are of float type
-	threshold(normalGD,big,5,1,THRESH_BINARY)
-	threshold(normalGD,small,5,1,THRESH_BINARY_INV)
-  multipy(normalGD,small,normalGD)
-	normalGD = normalGD + big*5;
+	Mat big,small;
+	int th=5;
+	threshold(normalGD,big,th,1,THRESH_BINARY);
+	threshold(normalGD,small,th,1,THRESH_BINARY_INV);
+  multiply(normalGD,small,normalGD);
+	normalGD = normalGD + big*th;
 	Mat W = c_value + normalGD / 2;
+	// cout<<W<<endl;
 	// bitwise_not (maskForGDRange, maskForGDRange_not );
 	// multipy(W,maskForGDRange_not,W);
   // W = W + maskForGDRange * c_value;
 	W = W + c_value;
-	K1 = tForGaussDerRes;
-	Mat S1 = Mat::ones(K1, K1, CV_8UC1);
+	int K1 = tForGaussDerRes;
+	Mat S1 = Mat::ones(K1, K1, CV_32FC1);
 	S1=S1/(K1*K1);
+	Mat averageMF;
+	Mat out1;
 	filter2D(maxMatchFilterRes,averageMF, -1 , S1, Point(-1, -1), 0, BORDER_DEFAULT );
-	multipy(W,averageMF,out1);
-  vess = threshold((maxMatchFilterRes - out1),vess,0,1,THRESH_BINARY);
-
-	return vess
+	multiply(W,averageMF,out1);
+	// cout<<out1<<endl;
+	Mat diff_max=maxMatchFilterRes - out1;
+	cout<<maxMatchFilterRes<<endl;
+  Mat vess;
+  threshold(diff_max,vess,0,1,THRESH_BINARY);
+  // cout<<vess<<endl;
+	return vess;
+	// return im;
 
 }
 
 
+
+
 int main( int argc, char** argv )
 {
-	Mat im = imread("lane_test.png");
-  Mat vess1 = MatchFilterWithGaussDerivative(1,im,1.5,1.5,9,5,41,201,8,3,40);
+	// cout<<"here";
+	Mat im = imread("opmeanshift2p0image-986.png");
 
+	Mat channel[3];
+	split(im,channel);
+	Mat_<float> fm;
+  channel[1].convertTo(fm,CV_32F);
+  Mat vess1 = MatchFilterWithGaussDerivative(1,fm,1.5,1.5,9,5,41,201,8,3.0,40);
+	imshow("filtered",vess1);
+	waitKey(0);
+  return 0;
 }
