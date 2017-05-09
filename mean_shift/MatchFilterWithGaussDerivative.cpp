@@ -196,14 +196,11 @@ Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaFo
 int main( int argc, char** argv )
 {
 	// cout<<"here";
-	Mat im = imread("opmeanshift2p0image-436fullsize.png");
+	Mat im = imread("opmeanshift2p0image-171fullsize.png");
   int rows=im.rows;
   int cols=im.cols;
   Mat maskForGDRange = Mat::zeros(rows,cols, CV_8UC1);
   maskForGDRange.convertTo(maskForGDRange,CV_32F);
-
-
-  imshow("maskForGDRange",maskForGDRange);
 	Mat channel[3];
 	split(im,channel);
 	Mat_<float> fm;
