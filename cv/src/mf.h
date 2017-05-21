@@ -187,9 +187,10 @@ Mat MatchFilterWithGaussDerivative(int num,Mat im,float sigmaForMF,float sigmaFo
 	// cout<<out1<<endl;
 	Mat diff_max=maxMatchFilterRes - out1;
 	// cout<<maxMatchFilterRes<<endl;
-  Mat vess;
-  // Mat vess = Mat::zeros(diff_max.rows,diff_max.cols, CV_8UC1);
-  threshold(diff_max,vess,0,1,THRESH_BINARY);
+  // Mat vess;
+  Mat vess = Mat::zeros(diff_max.rows,diff_max.cols, CV_8UC1);
+
+  threshold(diff_max,vess,0,255,THRESH_BINARY);
   // cout<<vess<<endl;
 	return vess;
 	// return im;

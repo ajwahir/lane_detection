@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
 #include <iostream>
 #include <cmath>
 #include "opencv2/highgui/highgui.hpp"
@@ -26,22 +28,25 @@ int main(int argc, char** argv)
 
   double H1[3][3]={-0.9194494538490644, 3.029211141257473, 1199.216754562135,
     -0.002781469435773509, 2.843461629191059, 99.21405495098099,
-    -1.030173865101134e-05, 0.004728215172708329, 1}
+    -1.030173865101134e-05, 0.004728215172708329, 1};
 
   cv::Mat H(3,3,CV_64F,H1);
 
   // VideoCapture capture(0);
-  capture.set(CV_CAP_PROP_FRAME_HEIGHT,720,CV_CAP_PROP_FRAME_WIDTH,1280);
+  // capture.set(CV_CAP_PROP_FRAME_HEIGHT,720,CV_CAP_PROP_FRAME_WIDTH,1280);
   while(true)
 	{
 	  // capture >> frame;
-    frame=imread("opmeanshift2p0image-144fullsize.png");
+    frame=imread("/home/ajwahir/OA/src/cv/src/calib_cfi.jpg");
 		Rect roi;
 		roi.x = 420;
     roi.y = 217;
     roi.width = 440;
     roi.height = 271;
-		warpPerspective(frame, trans, H, Size(frame.cols, frame.rows));
+    cout<<"print I am here "<<endl;
+    cout<<frame.rows<<endl<<frame.cols<<endl;
+    warpPerspective(frame, trans, H, Size(frame.cols, frame.rows));
+
 		trans = trans(roi);
     // imshow("original",frame);
 
@@ -56,8 +61,10 @@ int main(int argc, char** argv)
 		split(im,channel);
 		Mat_<float> fm;
 	  channel[0].convertTo(fm,CV_32F);
-	  Mat vess1 = MatchFilterWithGaussDerivative(1,fm,1.5,1.5,9,5,41,201,8,maskForGDRange,3.0,40);
-		imshow("filtered",vess1);
+	  Mat filt_frame = MatchFilterWithGaussDerivative(1,fm,1.5,1.5,9,5,41,201,8,maskForGDRange,3.0,40);
+    // filt_frame.convertTo(filt_frame,CV_8U);
+		// imshow("filtered",filt_frame);
+    // waitKey(0);
 
 
   ros::init (argc, argv, "pub_pcl");
@@ -65,7 +72,7 @@ int main(int argc, char** argv)
   ros::Publisher pub = nh.advertise<PointCloud> ("points2", 1);
 
   PointCloud2Ptr points_msg = boost::make_shared<PointCloud2>();
-  points_msg->header = cam_laser; // TODO fill in header
+  points_msg->header.frame_id = "cam_laser"; // TODO fill in header
   points_msg->height = frame.rows; // if this is a "full 3D" pointcloud, height is 1; if this is Kinect-like pointcloud, height is the vertical resolution
   points_msg->width  = frame.cols;
   points_msg->is_bigendian = false;
@@ -82,12 +89,21 @@ int main(int argc, char** argv)
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(*points_msg, "g");
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*points_msg, "b");
 
+  cout<<type2str(filt_frame.type())<<endl;
+
+  for(int i=0;i<rows;i++)
+    for(int j=0;j<cols;j++)
+      cout<<filt_frame.at<float>(Point(i,j))<<endl;
+
+  waitKey(0);
+
   for(int i=0;i<rows;i++)
     for(int j=0;j<cols;j++)
     {
       for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
       {
-        if(frame.at<float>(Point(i,j))==1)
+        // cout<<endl<<filt_frame.at<int>(Point(i,j))<<endl;
+        if(filt_frame.at<float>(Point(i,j))==1)
         {
         // TODO fill in x, y, z, r, g, b local variables
         *iter_x = (j-(cols/2))*x_pix;
@@ -96,6 +112,7 @@ int main(int argc, char** argv)
         *iter_r = 255;
         *iter_g = 255;
         *iter_b = 255;
+        cout<<"I am here one"<<endl;
         }
         else
         {
@@ -105,8 +122,10 @@ int main(int argc, char** argv)
           *iter_r = 0;
           *iter_g = 0;
           *iter_b = 0;
+          // cout<<"I am here two"<<endl;
         }
       }
+
     }
   //
   // PointCloud::Ptr msg (new PointCloud);
@@ -128,7 +147,7 @@ int main(int argc, char** argv)
   ros::Rate loop_rate(4);
   while (nh.ok())
   {
-    msg->header.stamp = ros::Time::now().toNSec();
+    points_msg->header.stamp = ros::Time::now();
     pub.publish (points_msg);
     ros::spinOnce ();
     loop_rate.sleep ();
