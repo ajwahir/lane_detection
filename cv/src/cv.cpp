@@ -89,44 +89,53 @@ int main(int argc, char** argv)
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(*points_msg, "g");
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*points_msg, "b");
 
-  cout<<type2str(filt_frame.type())<<endl;
+  // for(int i=0;i<rows;i++)
+  //   for(int j=0;j<cols;j++)
+  //     cout<<endl<<filt_frame.at<float>(i,j)<<endl;
+  //
+  //     waitKey(0);
 
   for(int i=0;i<rows;i++)
     for(int j=0;j<cols;j++)
-      cout<<filt_frame.at<float>(Point(i,j))<<endl;
-
-  waitKey(0);
-
-  for(int i=0;i<rows;i++)
-    for(int j=0;j<cols;j++)
-    {
-      for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
+      // for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
       {
-        // cout<<endl<<filt_frame.at<int>(Point(i,j))<<endl;
-        if(filt_frame.at<float>(Point(i,j))==1)
+        // cout<<endl<<filt_frame.at<float>(i,j)<<endl;
+        // waitKey(0);
+        if(filt_frame.at<float>(i,j)==255)
         {
-        // TODO fill in x, y, z, r, g, b local variables
-        *iter_x = (j-(cols/2))*x_pix;
-        *iter_y = (rows-i)*y_pix+blind_spot;
-        *iter_z = height_of_cam_from_ground;
-        *iter_r = 255;
-        *iter_g = 255;
-        *iter_b = 255;
-        cout<<"I am here one"<<endl;
+          *iter_x = (j-(cols/2))/x_pix;
+          *iter_y = (rows-i)/y_pix+blind_spot;
+          *iter_z = height_of_cam_from_ground;
+          *iter_r = 255;
+          *iter_g = 255;
+          *iter_b = 255;
+          ++iter_x;
+          ++iter_y;
+          ++iter_z;
+          ++iter_r;
+          ++iter_g;
+          ++iter_b;
+          // cout<<"I am here one"<<endl;
         }
         else
         {
-          *iter_x = (j-(cols/2))*x_pix;
-          *iter_y = (rows-i)*y_pix+blind_spot;
+          *iter_x = (j-(cols/2))/x_pix;
+          *iter_y = (rows-i)/y_pix+blind_spot;
           *iter_z = height_of_cam_from_ground;
           *iter_r = 0;
           *iter_g = 0;
           *iter_b = 0;
+          ++iter_x;
+          ++iter_y;
+          ++iter_z;
+          ++iter_r;
+          ++iter_g;
+          ++iter_b;
           // cout<<"I am here two"<<endl;
         }
       }
 
-    }
+
   //
   // PointCloud::Ptr msg (new PointCloud);
   // msg->header.frame_id = "camera";
