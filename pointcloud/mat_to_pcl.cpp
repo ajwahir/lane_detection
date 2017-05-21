@@ -20,21 +20,46 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 int main(int argc, char** argv)
 {
-  float x_pix=;
-  float y_pix=;
+  float x_pix=183.33;
+  float y_pix=103.33;
 
-  Mat im = imread("opmeanshift2p0image-171fullsize.png");
+  Mat trans;
+  Mat frame;
 
-  int rows=im.rows;
-  int cols=im.cols;
-  Mat maskForGDRange = Mat::zeros(rows,cols, CV_8UC1);
-  maskForGDRange.convertTo(maskForGDRange,CV_32F);
-	Mat channel[3];
-	split(im,channel);
-	Mat_<float> fm;
-  channel[0].convertTo(fm,CV_32F);
-  Mat vess1 = MatchFilterWithGaussDerivative(1,fm,1.5,1.5,9,5,41,201,8,maskForGDRange,3.0,40);
-  Mat frame=vess1;
+  double H1[3][3]={-0.9194494538490644, 3.029211141257473, 1199.216754562135,
+    -0.002781469435773509, 2.843461629191059, 99.21405495098099,
+    -1.030173865101134e-05, 0.004728215172708329, 1};
+
+  cv::Mat H(3,3,CV_64F,H1);
+
+  VideoCapture capture(0);
+  capture.set(CV_CAP_PROP_FRAME_HEIGHT,720,CV_CAP_PROP_FRAME_WIDTH,1280);
+  while(true)
+	{
+	  capture >> frame;
+		Rect roi;
+		roi.x = 420;
+    roi.y = 217;
+    roi.width = 440;
+    roi.height = 271;
+		warpPerspective(frame, trans, H, Size(frame.cols, frame.rows));
+		trans = trans(roi);
+    // imshow("original",frame);
+
+///lane detection part starts here
+
+		Mat im = trans;
+	  int rows=im.rows;
+	  int cols=im.cols;
+	  Mat maskForGDRange = Mat::zeros(rows,cols, CV_8UC1);
+	  maskForGDRange.convertTo(maskForGDRange,CV_32F);
+		Mat channel[3];
+		split(im,channel);
+		Mat_<float> fm;
+	  channel[0].convertTo(fm,CV_32F);
+	  Mat vess1 = MatchFilterWithGaussDerivative(1,fm,1.5,1.5,9,5,41,201,8,maskForGDRange,3.0,40);
+		imshow("filtered",vess1);
+
 
   ros::init (argc, argv, "pub_pcl");
   ros::NodeHandle nh;
@@ -49,34 +74,39 @@ int main(int argc, char** argv)
 
   sensor_msgs::PointCloud2Modifier pcd_modifier(*points_msg);
   // this call also resizes the data structure according to the given width, height and fields
-  pcd_modifier.setPointCloud2FieldsByString(2, "xyz", "I");
+  pcd_modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
 
   sensor_msgs::PointCloud2Iterator<float> iter_x(*points_msg, "x");
   sensor_msgs::PointCloud2Iterator<float> iter_y(*points_msg, "y");
   sensor_msgs::PointCloud2Iterator<float> iter_z(*points_msg, "z");
-  sensor_msgs::PointCloud2Iterator<uint8_t> iter_i(*points_msg, "I");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_r(*points_msg, "r");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(*points_msg, "g");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*points_msg, "b");
 
-  for (...) // TODO get/generate point coordinates and colors
-  {
-    for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
+  for(int i=0;i<rows;i++)
+    for(int j=0;j<cols;j++)
     {
-      if(frame.at<float>(Point(i,j))==1)
+      for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
       {
-      // TODO fill in x, y, z, r, g, b local variables
-      *iter_x = (j-(cols/2))*x_pix;
-      *iter_y = (rows-i)*y_pix+blind_spot;
-      *iter_z = height_of_cam_from_ground;
-      *iter_i = 255 ;
-      }
-      else
-      {
+        if(frame.at<float>(Point(i,j))==1)
+        {
+        // TODO fill in x, y, z, r, g, b local variables
         *iter_x = (j-(cols/2))*x_pix;
         *iter_y = (rows-i)*y_pix+blind_spot;
         *iter_z = height_of_cam_from_ground;
-        *iter_i = 0 ;
+        *iter_r = 255;
+        *iter_g = 255;
+        *iter_b = 255;
+        }
+        else
+        {
+          *iter_x = (j-(cols/2))*x_pix;
+          *iter_y = (rows-i)*y_pix+blind_spot;
+          *iter_z = height_of_cam_from_ground;
+          *iter_i = 0 ;
+        }
       }
     }
-  }
   //
   // PointCloud::Ptr msg (new PointCloud);
   // msg->header.frame_id = "camera";

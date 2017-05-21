@@ -26,7 +26,7 @@ int main( int argc, char** argv )
   channel[0].convertTo(fm,CV_32F);
   Mat vess1 = MatchFilterWithGaussDerivative(1,fm,1.5,1.5,9,5,41,201,8,maskForGDRange,3.0,40);
 	imshow("filtered",vess1);
-	imwrite("lane_out.jpg",vess1);
+	// imwrite("lane_out.jpg",vess1);
 	waitKey(0);
 
   return 0;

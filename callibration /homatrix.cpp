@@ -85,7 +85,7 @@ Point2f* selectPoint(Mat src)	//creates a new image from original enables to sel
 
 int main()
 {
-	Mat src = imread("lanes.jpg", CV_LOAD_IMAGE_UNCHANGED);
+	Mat src = imread("calib_cfi.jpg", CV_LOAD_IMAGE_UNCHANGED);
 	while(src.data)
 	{
 	float cx = src.cols/2, cy = src.rows/2;

@@ -1,0 +1,23 @@
+Caliberated Values -
+
+For full image resoulution:
+
+x direction pixels to metres - 55 pixels = 30cm (183 pixels per metre)
+y direction pixels to metres - 31 pixels = 30cm (103 pixels per metre)
+
+Homography matrix -
+For video feed with 640*480 image resolution :-
+
+double H1[3][3]={-0.9292908790222717, 2.341752523940345, 607.1565948371357,
+  0.009553765572285489, 2.931989216501558, 59.38005900465606,
+  1.907968257994046e-05, 0.007313675675649619, 1};
+
+For full image resolution :-
+
+double H1[3][3]={-0.9194494538490644, 3.029211141257473, 1199.216754562135,
+  -0.002781469435773509, 2.843461629191059, 99.21405495098099,
+  -1.030173865101134e-05, 0.004728215172708329, 1}
+
+Size of the image frame -
+rows = 217 to 488
+cols = 420 to 860 with 640 in the middle as the resolution of the cam is 1280
